@@ -6,7 +6,6 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 
 TOKEN = os.getenv("TOKEN")
 PORT = int(os.environ.get("PORT", 10000))
-# URL pública de tu servicio en Render con tu Token como ruta secreta
 WEBHOOK_URL = f"https://bedi-palma-bot.onrender.com/{TOKEN}"
 
 def generar_password():
@@ -75,10 +74,10 @@ if __name__ == "__main__":
     
     print("🤖 Iniciando servidor Webhook nativo en Render...")
     
-    # Inicia el servidor web integrado de la librería para Render
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
         url_path=TOKEN,
         webhook_url=WEBHOOK_URL
     )
+    
