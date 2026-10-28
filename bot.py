@@ -18,63 +18,116 @@ def run_web():
     port = int(os.environ.get("PORT", 10000))
     app_web.run(host='0.0.0.0', port=port)
 
-def generar_password():
+def generar_password(passwords_usadas):
     caracteres = string.ascii_letters + string.digits
-    return "".join(random.choice(caracteres) for _ in range(10))
+    while True:
+        password = "".join(random.choice(caracteres) for _ in range(10))
+        if password not in passwords_usadas:
+            passwords_usadas.add(password)
+            return password
 
-ultimos_datos = {}
+# Listas masivas de nombres y apellidos
+NOMBRES = [
+    "Carlos", "Daniel", "Alejandro", "Jose", "David", "Mateo", "Lucas", "Adrian", "Gabriel", "Samuel",
+    "Martin", "Thiago", "Valentin", "Joaquin", "Bruno", "Emiliano", "Felipe", "Dante", "Liam", "Ian",
+    "Sofia", "Valentina", "Camila", "Lucia", "Mariana", "Victoria", "Martina", "Catalina", "Elena", "Valeria",
+    "Sebastian", "Diego", "Nicolas", "Benjamin", "Julian", "Eduardo", "Fernando", "Ricardo", "Vicente", "Alonso",
+    "Isabella", "Gabriela", "Adriana", "Natalia", "Daniela", "Ximena", "Andrea", "Paula", "Regina", "Julieta",
+    "Aaron", "Alan", "Alex", "Andres", "Antony", "Axel", "Christian", "Cesar", "Dominic", "Dylan",
+    "Abigail", "Alejandra", "Alice", "Alondra", "Amalia", "Amanda", "Amy", "Ana", "Anahi", "Antonia",
+    "Emanuel", "Enrique", "Ernesto", "Esteban", "Fabian", "Federico", "Flavio", "Francisco", "Gael", "Giovanni",
+    "Ariadna", "Ashley", "Aylen", "Belen", "Bianca", "Carla", "Carolina", "Celeste", "Clara", "Constanza",
+    "Gonzalo", "Guillermo", "Gustavo", "Hector", "Hugo", "Isaac", "Ismael", "Ivan", "Jairo", "Javier",
+    "Dafne", "Dalila", "Danna", "Delfina", "Denisse", "Diana", "Doris", "Dulce", "Emilia", "Emma",
+    "Jesus", "Jonatan", "Jorge", "Josue", "Juan", "Kevin", "Leonardo", "Lorenzo", "Marcos", "Mario",
+    "Fatima", "Florencia", "Gisela", "Guadalupe", "Ivanna", "Jazmin", "Jimena", "Karin", "Kiara", "Laila",
+    "Manuel", "Maximiliano", "Matias", "Maximo", "Miguel", "Moises", "Nahuel", "Nazareno", "Noel", "Oscar",
+    "Liliana", "Lourdes", "Luana", "Luciana", "Luna", "Luz", "Magdalena", "Maite", "Malena", "Marcela",
+    "Pablo", "Patricio", "Pedro", "Pietro", "Rafael", "Ramon", "Raul", "Renzo", "Rodrigo", "Rogelio",
+    "Margarita", "Maria", "Marta", "Melania", "Melina", "Mia", "Milagros", "Miranda", "Mireia", "Monica",
+    "Ruben", "Salvador", "Santos", "Sergio", "Simon", "Tadeo", "Thiago", "Tomas", "Uriel", "Valentin",
+    "Nadia", "Naomi", "Natalia", "Nathalie", "Nayeli", "Nicole", "Nidia", "Nieves", "Noelia", "Nora",
+    "Vicente", "Victor", "Vito", "Yago", "Yair", "Yan", "Yandel", "Zack", "Zaid",
+    "Olivia", "Olimpia", "Oriana", "Paloma", "Pamela", "Paola", "Patricia", "Paz", "Penelope", "Pilar"
+]
+
+APELLIDOS = [
+    "Perez", "Gomez", "Lopez", "Rodriguez", "Torres", "Morales", "Diaz", "Castillo", "Romero", "Alvarez",
+    "Jimenez", "Ruiz", "Hernandez", "Garcia", "Martinez", "Gonzalez", "Fernandez", "Sanchez", "Moreno", "Muñoz",
+    "Alonso", "Gutierrez", "Navarro", "Ramos", "Gil", "Serrano", "Blanco", "Molina", "Ortega", "Delgado",
+    "Castro", "Ortiz", "Rubio", "Marin", "Sanz", "Iglesias", "Medina", "Garrido", "Santos", "Cortes",
+    "Lozano", "Guerrero", "Cano", "Prieto", "Mendez", "Cruz", "Calvo", "Vidal", "Leon", "Vargas",
+    "Aguilar", "Arias", "Benitez", "Cabrera", "Campos", "Cardona", "Carrasco", "Carvajal", "Chavez", "Contreras",
+    "Coronel", "Duarte", "Espinoza", "Estrada", "Fajardo", "Flores", "Franco", "Fuentes", "Gallardo", "Gallego",
+    "Garza", "Gimenes", "Godoy", "Granados", "Guerra", "Guevara", "Heredia", "Huerta", "Hurtado", "Jaimes",
+    "Jara", "Jaramillo", "Lara", "Leal", "Ledezma", "Ledesma", "Leyva", "Lira", "Macias", "Maldonado",
+    "Manriquez", "Marrero", "Marroquin", "Matas", "Mateos", "Matos", "Medrano", "Mejia", "Mendoza", "Mercado",
+    "Miranda", "Montero", "Montes", "Mora", "Mosquera", "Moya", "Narvaez", "Nieto", "Nunez", "Ochoa",
+    "Padilla", "Palacios", "Pardo", "Paredes", "Parra", "Pascual", "Paz", "Pena", "Peralta", "Pereda",
+    "Pereira", "Picado", "Pino", "Pinto", "Pizarro", "Plaza", "Ponce", "Portillo", "Pozo",
+    "Prado", "Puente", "Pulido", "Quezada", "Quintana", "Quintero", "Quiroga", "Ramirez", "Rangel", "Rebolledo",
+    "Redondo", "Regalado", "Rendon", "Retamal", "Reyes", "Reynoso", "Riano", "Rios", "Rivas", "Rivera",
+    "Robledo", "Robles", "Roca", "Rojas", "Roldan", "Roman", "Rosales", "Rosas", "Rueda", "Saavedra",
+    "Salas", "Salazar", "Salgado", "Salinas", "Salvador", "Sancho", "Sandoval", "Santana", "Santiago",
+    "Sarabia", "Saura", "Sedano", "Segovia", "Sepulveda", "Serna", "Severino", "Sierra", "Silva", "Solis",
+    "Soria", "Soto", "Suarez", "Talavera", "Tapia", "Tejeda", "Tellez", "Tello", "Tijerina", "Tobar",
+    "Toledo", "Toro", "Tovar", "Trejo", "Trujillo", "Uribe", "Urrutia", "Valdez", "Valdivia"
+]
+
+# Historial global por chat para evitar repetir nombres mientras usas el bot
+historial_chats = {}
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.reply_to(
         message, 
-        "🤖 **Bot en la nube (Solo Outlook)**\n• Usa /nuevo -> Genera un perfil", 
+        "🤖 **Bot de Outlook**\n• Usa /nuevo -> Perfiles masivos 100% sin repetir", 
         parse_mode="Markdown"
     )
 
 @bot.message_handler(commands=['nuevo'])
 def send_nuevo(message):
-    nombres = ["Carlos", "Daniel", "Alejandro", "Jose", "David", "Mateo", "Lucas", "Adrian", "Gabriel", "Samuel"]
-    apellidos = ["Perez", "Gomez", "Lopez", "Rodriguez", "Torres", "Morales", "Diaz", "Castillo", "Romero", "Alvarez"]
-    
-    nombre = random.choice(nombres)
-    apellido = random.choice(apellidos)
-    sufijo = random.randint(100, 999)
-    password = generar_password()
-    correo = f"{nombre.lower()}.{apellido.lower()}{sufijo}@outlook.com"
-    
     chat_id = message.chat.id
-    ultimos_datos[chat_id] = {
-        "nombre": f"{nombre} {apellido}",
-        "correo": correo,
-        "pass": password
-    }
+    
+    if chat_id not in historial_chats:
+        historial_chats[chat_id] = set()
+        
+    texto_perfiles = "📋 **Tus perfiles únicos (Cero repeticiones):**\n\n"
+    passwords_usadas = set()
+    
+    perfiles_generados = 0
+    intentos = 0
+    
+    while perfiles_generados < 2 and intentos < 100:
+        intentos += 1
+        nombre = random.choice(NOMBRES)
+        apellido = random.choice(APELLIDOS)
+        combinacion = (nombre, apellido)
+        
+        # Validamos que no se haya usado antes en este chat
+        if combinacion not in historial_chats[chat_id]:
+            historial_chats[chat_id].add(combinacion)
+            perfiles_generados += 1
+            
+            sufijo = random.randint(1000, 9999)
+            password = generar_password(passwords_usadas)
+            correo = f"{nombre.lower()}.{apellido.lower()}{sufijo}@outlook.com"
+            
+            texto_perfiles += f"👤 **Nombre:** `{nombre} {apellido}`\n📧 **Correo:** `{correo}`\n🔑 **Pass:** `{password}`\n\n"
 
     markup = telebot.types.InlineKeyboardMarkup()
-    markup.add(telebot.types.InlineKeyboardButton("📋 Copiar Nombre", callback_data="copiar_nombre"))
-    markup.add(telebot.types.InlineKeyboardButton("📧 Copiar Correo", callback_data="copiar_correo"))
-    markup.add(telebot.types.InlineKeyboardButton("🔑 Copiar Pass", callback_data="copiar_pass"))
-    markup.add(telebot.types.InlineKeyboardButton("🔄 Generar Nuevo", callback_data="generar_nuevo"))
+    markup.add(telebot.types.InlineKeyboardButton("🔄 Generar 2 Nuevos", callback_data="generar_dos"))
 
     bot.send_message(
         chat_id,
-        f"👤 **Nombre:** {nombre} {apellido}\n📧 **Correo:** {correo}\n🔑 **Password:** {password}",
+        texto_perfiles,
         reply_markup=markup,
         parse_mode="Markdown"
     )
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
-    chat_id = call.message.chat.id
-    datos = ultimos_datos.get(chat_id, {"nombre": "N/A", "correo": "N/A", "pass": "N/A"})
-    
-    if call.data == "copiar_nombre":
-        bot.send_message(chat_id, f"📋 **Nombre:** `{datos['nombre']}`", parse_mode="Markdown")
-    elif call.data == "copiar_correo":
-        bot.send_message(chat_id, f"📧 **Correo:** `{datos['correo']}`", parse_mode="Markdown")
-    elif call.data == "copiar_pass":
-        bot.send_message(chat_id, f"🔑 **Password:** `{datos['pass']}`", parse_mode="Markdown")
-    elif call.data == "generar_nuevo":
+    if call.data == "generar_dos":
         send_nuevo(call.message)
         
     bot.answer_callback_query(call.id)
@@ -96,3 +149,4 @@ if __name__ == "__main__":
 
     print("🌐 Iniciando servidor web Flask...")
     run_web()
+    
