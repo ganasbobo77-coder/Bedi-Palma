@@ -80,9 +80,16 @@ def callback_inline(call):
         
     bot.answer_callback_query(call.id)
 
-if __name__ == "__main__":
+    if __name__ == "__main__":
     if not TOKEN:
         raise ValueError("No se encontró el TOKEN en las variables de entorno.")
+
+    # Borrar cualquier webhook viejo en Telegram antes de arrancar el polling
+    try:
+        bot.remove_webhook()
+        print("Webhook anterior eliminado con éxito de Telegram.")
+    except Exception as e:
+        print(f"Aviso al limpiar webhook: {e}")
 
     # 1. Arrancar el bot de Telegram en un hilo secundario independiente
     t_bot = threading.Thread(target=lambda: bot.infinity_polling(skip_pending=True))
