@@ -34,13 +34,14 @@ def send_welcome(message):
 
 @bot.message_handler(commands=['nuevo'])
 def send_nuevo(message):
-    nombres = ["Carlos", "Daniel", "Alejandro", "Jose", "David"]
-    apellidos = ["Perez", "Gomez", "Lopez", "Rodriguez", "Torres"]
+    nombres = ["Carlos", "Daniel", "Alejandro", "Jose", "David", "Mateo", "Lucas", "Adrian", "Gabriel", "Samuel"]
+    apellidos = ["Perez", "Gomez", "Lopez", "Rodriguez", "Torres", "Morales", "Diaz", "Castillo", "Romero", "Alvarez"]
     
     nombre = random.choice(nombres)
     apellido = random.choice(apellidos)
+    sufijo = random.randint(100, 999) # Número único para evitar repeticiones
     password = generar_password()
-    correo = f"{nombre.lower()}.{apellido.lower()}103r03@outlook.com"
+    correo = f"{nombre.lower()}.{apellido.lower()}{sufijo}@outlook.com"
     
     chat_id = message.chat.id
     ultimos_datos[chat_id] = {
@@ -95,4 +96,3 @@ if __name__ == "__main__":
 
     print("🌐 Iniciando servidor web Flask...")
     run_web()
-    
