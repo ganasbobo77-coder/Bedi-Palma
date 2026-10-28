@@ -1,16 +1,23 @@
 import os
 import random
 import string
-from flask import Flask, request
+from threading import Thread
+from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
 TOKEN = os.getenv("TOKEN")
-# La URL que te da Render para tu servicio web
-WEBHOOK_URL = "https://bedi-palma-bot.onrender.com/" + TOKEN
 
-app_web = Flask(__name__)
-telegram_app = None
+# Servidor Flask simple solo para mantener el puerto abierto en Render
+app_web = Flask('')
+
+@app_web.route('/')
+def home():
+    return "¡El bot de Telegram está activo!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    app_web.run(host='0.0.0.0', port=port)
 
 def generar_password():
     caracteres = string.ascii_letters + string.digits
@@ -66,32 +73,21 @@ async def botones_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "generar_nuevo":
         await generar_credenciales(update, context)
 
-@app_web.route(f'/{TOKEN}', methods=['POST'])
-def webhook():
-    update = Update.de_json(request.get_json(force=True), telegram_app.bot)
-    asyncot = telegram_app.update_queue.put(update)
-    return 'ok'
-
-@app_web.route('/')
-def home():
-    return "¡El bot de Telegram está activo por Webhook!"
-
-async def setup_bot():
-    global telegram_app
-    telegram_app = Application.builder().token(TOKEN).build()
-    
-    telegram_app.add_handler(CommandHandler("start", start))
-    telegram_app.add_handler(CommandHandler("nuevo", generar_credenciales))
-    telegram_app.add_handler(CallbackQueryHandler(botones_callback))
-    
-    await telegram_app.initialize()
-    await telegram_app.bot.set_webhook(url=WEBHOOK_URL)
-    print("🤖 Webhook configurado correctamente...")
-
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(setup_bot())
+    if not TOKEN:
+        raise ValueError("No se encontró el TOKEN en las variables de entorno.")
     
-    port = int(os.environ.get("PORT", 10000))
-    app_web.run(host='0.0.0.0', port=port)
+    # 1. Levantar el servidor Flask en un hilo secundario para cumplir con el puerto de Render
+    t = Thread(target=run_web)
+    t.daemon = True
+    t.start()
+
+    # 2. Construir y arrancar el bot de Telegram de forma directa
+    app = ApplicationBuilder().token(TOKEN).build()
     
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("nuevo", generar_credenciales))
+    app.add_handler(CallbackQueryHandler(botones_callback))
+    
+    print("🤖 Bot iniciado correctamente con polling...")
+    app.run_polling(drop_pending_updates=True)
