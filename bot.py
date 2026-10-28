@@ -1,23 +1,13 @@
 import os
 import random
 import string
-from threading import Thread
-from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
 TOKEN = os.getenv("TOKEN")
-
-# Servidor Flask simple solo para mantener el puerto abierto en Render
-app_web = Flask('')
-
-@app_web.route('/')
-def home():
-    return "¡El bot de Telegram está activo!"
-
-def run_web():
-    port = int(os.environ.get("PORT", 10000))
-    app_web.run(host='0.0.0.0', port=port)
+PORT = int(os.environ.get("PORT", 10000))
+# URL pública de tu servicio en Render con tu Token como ruta secreta
+WEBHOOK_URL = f"https://bedi-palma-bot.onrender.com/{TOKEN}"
 
 def generar_password():
     caracteres = string.ascii_letters + string.digits
@@ -77,17 +67,18 @@ if __name__ == "__main__":
     if not TOKEN:
         raise ValueError("No se encontró el TOKEN en las variables de entorno.")
     
-    # 1. Levantar el servidor Flask en un hilo secundario para cumplir con el puerto de Render
-    t = Thread(target=run_web)
-    t.daemon = True
-    t.start()
-
-    # 2. Construir y arrancar el bot de Telegram de forma directa
     app = ApplicationBuilder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("nuevo", generar_credenciales))
     app.add_handler(CallbackQueryHandler(botones_callback))
     
-    print("🤖 Bot iniciado correctamente con polling...")
-    app.run_polling(drop_pending_updates=True)
+    print("🤖 Iniciando servidor Webhook nativo en Render...")
+    
+    # Inicia el servidor web integrado de la librería para Render
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=TOKEN,
+        webhook_url=WEBHOOK_URL
+    )
