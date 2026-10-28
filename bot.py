@@ -71,17 +71,16 @@ APELLIDOS = [
     "Salas", "Salazar", "Salgado", "Salinas", "Salvador", "Sancho", "Sandoval", "Santana", "Santiago",
     "Sarabia", "Saura", "Sedano", "Segovia", "Sepulveda", "Serna", "Severino", "Sierra", "Silva", "Solis",
     "Soria", "Soto", "Suarez", "Talavera", "Tapia", "Tejeda", "Tellez", "Tello", "Tijerina", "Tobar",
-    "Toledo", "Toro", "Tovar", "Trejo", "Trujillo", "Uribe", "Urrutia", "Valdez", "Valdivia"
+    "Toledo", "Toro", "Torres", "Tovar", "Trejo", "Trujillo", "Uribe", "Urrutia", "Valdez", "Valdivia"
 ]
 
-# Historial global por chat para evitar repetir nombres mientras usas el bot
 historial_chats = {}
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.reply_to(
         message, 
-        "🤖 **Bot de Outlook**\n• Usa /nuevo -> Perfiles masivos 100% sin repetir", 
+        "🤖 **Bot de Outlook**\n• Usa /nuevo -> Perfiles únicos", 
         parse_mode="Markdown"
     )
 
@@ -92,7 +91,7 @@ def send_nuevo(message):
     if chat_id not in historial_chats:
         historial_chats[chat_id] = set()
         
-    texto_perfiles = "📋 **Tus perfiles únicos (Cero repeticiones):**\n\n"
+    texto_perfiles = "📋 **Tus perfiles únicos:**\n\n"
     passwords_usadas = set()
     
     perfiles_generados = 0
@@ -104,16 +103,17 @@ def send_nuevo(message):
         apellido = random.choice(APELLIDOS)
         combinacion = (nombre, apellido)
         
-        # Validamos que no se haya usado antes en este chat
         if combinacion not in historial_chats[chat_id]:
             historial_chats[chat_id].add(combinacion)
             perfiles_generados += 1
             
             sufijo = random.randint(1000, 9999)
             password = generar_password(passwords_usadas)
-            correo = f"{nombre.lower()}.{apellido.lower()}{sufijo}@outlook.com"
             
-            texto_perfiles += f"👤 **Nombre:** `{nombre} {apellido}`\n📧 **Correo:** `{correo}`\n🔑 **Pass:** `{password}`\n\n"
+            # Solo el usuario y sufijo van dentro del bloque de código para copiarse, el dominio queda fuera
+            usuario_correo = f"{nombre.lower()}.{apellido.lower()}{sufijo}"
+            
+            texto_perfiles += f"👤 **Nombre:** `{nombre} {apellido}`\n📧 **Correo:** `{usuario_correo}`@outlook.com\n🔑 **Pass:** `{password}`\n\n"
 
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(telebot.types.InlineKeyboardButton("🔄 Generar 2 Nuevos", callback_data="generar_dos"))
@@ -122,7 +122,8 @@ def send_nuevo(message):
         chat_id,
         texto_perfiles,
         reply_markup=markup,
-        parse_mode="Markdown"
+        parse_mode="Markdown",
+        protect_content=True
     )
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -149,4 +150,3 @@ if __name__ == "__main__":
 
     print("🌐 Iniciando servidor web Flask...")
     run_web()
-    
