@@ -8,7 +8,6 @@ from flask import Flask
 TOKEN = os.getenv("TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
-# Servidor Flask en el hilo principal para cumplir con el puerto web que exige Render
 app_web = Flask('')
 
 @app_web.route('/')
@@ -23,7 +22,6 @@ def generar_password():
     caracteres = string.ascii_letters + string.digits
     return "".join(random.choice(caracteres) for _ in range(10))
 
-# Almacén temporal de datos por usuario para los botones
 ultimos_datos = {}
 
 @bot.message_handler(commands=['start'])
@@ -80,23 +78,21 @@ def callback_inline(call):
         
     bot.answer_callback_query(call.id)
 
-    if __name__ == "__main__":
+if __name__ == "__main__":
     if not TOKEN:
         raise ValueError("No se encontró el TOKEN en las variables de entorno.")
 
-    # Borrar cualquier webhook viejo en Telegram antes de arrancar el polling
     try:
         bot.remove_webhook()
         print("Webhook anterior eliminado con éxito de Telegram.")
     except Exception as e:
         print(f"Aviso al limpiar webhook: {e}")
 
-    # 1. Arrancar el bot de Telegram en un hilo secundario independiente
     t_bot = threading.Thread(target=lambda: bot.infinity_polling(skip_pending=True))
     t_bot.daemon = True
     t_bot.start()
     print("🤖 Bot iniciado en segundo plano...")
 
-    # 2. Arrancar Flask en el hilo principal para atender el puerto web de Render
     print("🌐 Iniciando servidor web Flask...")
     run_web()
+    
