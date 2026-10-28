@@ -1,12 +1,24 @@
 import os
 import random
 import string
+from threading import Thread
+import requests
+from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
 TOKEN = os.getenv("TOKEN")
-PORT = int(os.environ.get("PORT", 10000))
-WEBHOOK_URL = f"https://bedi-palma-bot.onrender.com/{TOKEN}"
+
+# Servidor Flask simple para mantener el puerto web abierto que exige Render
+app_web = Flask('')
+
+@app_web.route('/')
+def home():
+    return "¡El bot de Telegram está activo y funcionando!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    app_web.run(host='0.0.0.0', port=port)
 
 def generar_password():
     caracteres = string.ascii_letters + string.digits
@@ -62,22 +74,32 @@ async def botones_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "generar_nuevo":
         await generar_credenciales(update, context)
 
-if __name__ == "__main__":
+def main():
     if not TOKEN:
         raise ValueError("No se encontró el TOKEN en las variables de entorno.")
     
+    # 1. FUERZA BRUTA: Borrar cualquier webhook colgado en los servidores de Telegram antes de arrancar
+    url_delete = f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true"
+    try:
+        requests.get(url_delete)
+        print("Webhook anterior eliminado correctamente de Telegram.")
+    except Exception as e:
+        print(f"No se pudo limpiar el webhook: {e}")
+
+    # 2. Iniciar Flask en segundo plano para abrir el puerto de Render
+    t = Thread(target=run_web)
+    t.daemon = True
+    t.start()
+
+    # 3. Configurar y arrancar el bot de Telegram
     app = ApplicationBuilder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("nuevo", generar_credenciales))
     app.add_handler(CallbackQueryHandler(botones_callback))
     
-    print("🤖 Iniciando servidor Webhook nativo en Render...")
-    
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path=TOKEN,
-        webhook_url=WEBHOOK_URL
-    )
-    
+    print("🤖 Iniciando bot con polling continuo...")
+    app.run_polling(drop_pending_updates=True)
+
+if __name__ == "__main__":
+    main()
