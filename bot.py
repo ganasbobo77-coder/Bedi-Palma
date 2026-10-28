@@ -39,7 +39,7 @@ def send_nuevo(message):
     
     nombre = random.choice(nombres)
     apellido = random.choice(apellidos)
-    sufijo = random.randint(100, 999) # Número único para evitar repeticiones
+    sufijo = random.randint(100, 999) # Número único para que el correo nunca se repita
     password = generar_password()
     correo = f"{nombre.lower()}.{apellido.lower()}{sufijo}@outlook.com"
     
