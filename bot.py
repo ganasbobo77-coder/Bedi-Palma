@@ -80,7 +80,7 @@ historial_chats = {}
 def send_welcome(message):
     bot.reply_to(
         message, 
-        "🤖 **Bot de Outlook**\n• Usa /nuevo -> Perfiles listos para copiar", 
+        "🤖 **Bot de Outlook**\n• Usa /nuevo -> Perfiles sin puntos", 
         parse_mode="Markdown"
     )
 
@@ -110,9 +110,9 @@ def send_nuevo(message):
             sufijo = random.randint(1000, 9999)
             password = generar_password(passwords_usadas)
             
-            usuario_correo = f"{nombre.lower()}.{apellido.lower()}{sufijo}"
+            # CORREO SIN PUNTOS (ej: davidmiranda4642)
+            usuario_correo = f"{nombre.lower()}{apellido.lower()}{sufijo}"
             
-            # Solo se copia el usuario al tocar el bloque, el @outlook.com queda fuera
             texto_perfiles += f"👤 **Nombre:** `{nombre} {apellido}`\n📧 **Correo:** `{usuario_correo}`@outlook.com\n🔑 **Pass:** `{password}`\n\n"
 
     markup = telebot.types.InlineKeyboardMarkup()
