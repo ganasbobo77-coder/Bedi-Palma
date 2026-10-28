@@ -1,20 +1,19 @@
 import os
 import random
 import string
-from threading import Thread
-import requests
+import threading
+import telebot
 from flask import Flask
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
 TOKEN = os.getenv("TOKEN")
+bot = telebot.TeleBot(TOKEN)
 
-# Servidor Flask simple para mantener el puerto web abierto que exige Render
+# Servidor Flask en el hilo principal para cumplir con el puerto web que exige Render
 app_web = Flask('')
 
 @app_web.route('/')
 def home():
-    return "¡El bot de Telegram está activo y funcionando!"
+    return "¡El bot de Telegram está activo y funcionando 24/7!"
 
 def run_web():
     port = int(os.environ.get("PORT", 10000))
@@ -24,13 +23,19 @@ def generar_password():
     caracteres = string.ascii_letters + string.digits
     return "".join(random.choice(caracteres) for _ in range(10))
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "🤖 **Bot en la nube (Solo Outlook)**\n• Usa /nuevo -> Genera un perfil",
+# Almacén temporal de datos por usuario para los botones
+ultimos_datos = {}
+
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.reply_to(
+        message, 
+        "🤖 **Bot en la nube (Solo Outlook)**\n• Usa /nuevo -> Genera un perfil", 
         parse_mode="Markdown"
     )
 
-async def generar_credenciales(update: Update, context: ContextTypes.DEFAULT_TYPE):
+@bot.message_handler(commands=['nuevo'])
+def send_nuevo(message):
     nombres = ["Carlos", "Daniel", "Alejandro", "Jose", "David"]
     apellidos = ["Perez", "Gomez", "Lopez", "Rodriguez", "Torres"]
     
@@ -39,67 +44,52 @@ async def generar_credenciales(update: Update, context: ContextTypes.DEFAULT_TYP
     password = generar_password()
     correo = f"{nombre.lower()}.{apellido.lower()}103r03@outlook.com"
     
-    context.user_data['ultimo_nombre'] = f"{nombre} {apellido}"
-    context.user_data['ultimo_correo'] = correo
-    context.user_data['ultima_pass'] = password
+    chat_id = message.chat.id
+    ultimos_datos[chat_id] = {
+        "nombre": f"{nombre} {apellido}",
+        "correo": correo,
+        "pass": password
+    }
 
-    keyboard = [
-        [InlineKeyboardButton("📋 Copiar Nombre", callback_data="copiar_nombre")],
-        [InlineKeyboardButton("📧 Copiar Correo", callback_data="copiar_correo")],
-        [InlineKeyboardButton("🔑 Copiar Pass", callback_data="copiar_pass")],
-        [InlineKeyboardButton("🔄 Generar Nuevo", callback_data="generar_nuevo")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    markup = telebot.types.InlineKeyboardMarkup()
+    markup.add(telebot.types.InlineKeyboardButton("📋 Copiar Nombre", callback_data="copiar_nombre"))
+    markup.add(telebot.types.InlineKeyboardButton("📧 Copiar Correo", callback_data="copiar_correo"))
+    markup.add(telebot.types.InlineKeyboardButton("🔑 Copiar Pass", callback_data="copiar_pass"))
+    markup.add(telebot.types.InlineKeyboardButton("🔄 Generar Nuevo", callback_data="generar_nuevo"))
 
-    await update.message.reply_text(
+    bot.send_message(
+        chat_id,
         f"👤 **Nombre:** {nombre} {apellido}\n📧 **Correo:** {correo}\n🔑 **Password:** {password}",
-        reply_markup=reply_markup,
+        reply_markup=markup,
         parse_mode="Markdown"
     )
 
-async def botones_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    datos = context.user_data
-
-    if query.data == "copiar_nombre":
-        val = datos.get('ultimo_nombre', 'N/A')
-        await query.message.reply_text(f"📋 **Nombre:** `{val}`", parse_mode="Markdown")
-    elif query.data == "copiar_correo":
-        val = datos.get('ultimo_correo', 'N/A')
-        await query.message.reply_text(f"📧 **Correo:** `{val}`", parse_mode="Markdown")
-    elif query.data == "copiar_pass":
-        val = datos.get('ultima_pass', 'N/A')
-        await query.message.reply_text(f"🔑 **Password:** `{val}`", parse_mode="Markdown")
-    elif query.data == "generar_nuevo":
-        await generar_credenciales(update, context)
-
-def main():
-    if not TOKEN:
-        raise ValueError("No se encontró el TOKEN en las variables de entorno.")
+@bot.callback_query_handler(func=lambda call: True)
+def callback_inline(call):
+    chat_id = call.message.chat.id
+    datos = ultimos_datos.get(chat_id, {"nombre": "N/A", "correo": "N/A", "pass": "N/A"})
     
-    # 1. FUERZA BRUTA: Borrar cualquier webhook colgado en los servidores de Telegram antes de arrancar
-    url_delete = f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true"
-    try:
-        requests.get(url_delete)
-        print("Webhook anterior eliminado correctamente de Telegram.")
-    except Exception as e:
-        print(f"No se pudo limpiar el webhook: {e}")
-
-    # 2. Iniciar Flask en segundo plano para abrir el puerto de Render
-    t = Thread(target=run_web)
-    t.daemon = True
-    t.start()
-
-    # 3. Configurar y arrancar el bot de Telegram
-    app = ApplicationBuilder().token(TOKEN).build()
-    
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("nuevo", generar_credenciales))
-    app.add_handler(CallbackQueryHandler(botones_callback))
-    
-    print("🤖 Iniciando bot con polling continuo...")
-    app.run_polling(drop_pending_updates=True)
+    if call.data == "copiar_nombre":
+        bot.send_message(chat_id, f"📋 **Nombre:** `{datos['nombre']}`", parse_mode="Markdown")
+    elif call.data == "copiar_correo":
+        bot.send_message(chat_id, f"📧 **Correo:** `{datos['correo']}`", parse_mode="Markdown")
+    elif call.data == "copiar_pass":
+        bot.send_message(chat_id, f"🔑 **Password:** `{datos['pass']}`", parse_mode="Markdown")
+    elif call.data == "generar_nuevo":
+        send_nuevo(call.message)
+        
+    bot.answer_callback_query(call.id)
 
 if __name__ == "__main__":
-    main()
+    if not TOKEN:
+        raise ValueError("No se encontró el TOKEN en las variables de entorno.")
+
+    # 1. Arrancar el bot de Telegram en un hilo secundario independiente
+    t_bot = threading.Thread(target=lambda: bot.infinity_polling(skip_pending=True))
+    t_bot.daemon = True
+    t_bot.start()
+    print("🤖 Bot iniciado en segundo plano...")
+
+    # 2. Arrancar Flask en el hilo principal para atender el puerto web de Render
+    print("🌐 Iniciando servidor web Flask...")
+    run_web()
