@@ -1,10 +1,23 @@
 import os
 import random
 import string
+from threading import Thread
+from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
 TOKEN = os.getenv("TOKEN")
+
+# Servidor web falso para mantener vivo el servicio en Render
+app_web = Flask('')
+
+@app_web.route('/')
+def home():
+    return "¡El bot de Telegram está activo y funcionando 24/7!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    app_web.run(host='0.0.0.0', port=port)
 
 def generar_password():
     caracteres = string.ascii_letters + string.digits
@@ -64,6 +77,11 @@ if __name__ == "__main__":
     if not TOKEN:
         raise ValueError("No se encontró el TOKEN en las variables de entorno.")
     
+    # Iniciar el servidor web en un hilo secundario para satisfacer a Render
+    t = Thread(target=run_web)
+    t.start()
+
+    # Iniciar el bot de Telegram
     app = ApplicationBuilder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
