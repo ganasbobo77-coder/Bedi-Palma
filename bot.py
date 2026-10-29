@@ -110,7 +110,7 @@ def send_nuevo(message):
             sufijo = random.randint(1000, 9999)
             password = generar_password(passwords_usadas)
             
-            # Correo sin puntos y con el dominio completo DENTRO del bloque para poder copiarlo con un toque
+            # Correo sin puntos y con el dominio completo dentro del bloque para copiarlo fácilmente
             correo_completo = f"{nombre.lower()}{apellido.lower()}{sufijo}@outlook.com"
             
             texto_perfiles += f"👤 **Nombre:** `{nombre} {apellido}`\n📧 **Correo:** `{correo_completo}`\n🔑 **Pass:** `{password}`\n\n"
@@ -126,7 +126,7 @@ def send_nuevo(message):
     )
 
 @bot.callback_query_handler(func=lambda call: True)
-func def callback_inline(call):
+def callback_inline(call):
     if call.data == "generar_dos":
         send_nuevo(call.message)
         
