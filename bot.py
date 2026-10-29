@@ -80,7 +80,7 @@ historial_chats = {}
 def send_welcome(message):
     bot.reply_to(
         message, 
-        "🤖 **Bot de Outlook**\n• Usa /nuevo -> Perfiles sin puntos", 
+        "🤖 **Bot de Outlook**\n• Usa /nuevo -> Correos listos para copiar", 
         parse_mode="Markdown"
     )
 
@@ -110,10 +110,10 @@ def send_nuevo(message):
             sufijo = random.randint(1000, 9999)
             password = generar_password(passwords_usadas)
             
-            # CORREO SIN PUNTOS (ej: davidmiranda4642)
-            usuario_correo = f"{nombre.lower()}{apellido.lower()}{sufijo}"
+            # Correo sin puntos y con el dominio completo DENTRO del bloque para poder copiarlo con un toque
+            correo_completo = f"{nombre.lower()}{apellido.lower()}{sufijo}@outlook.com"
             
-            texto_perfiles += f"👤 **Nombre:** `{nombre} {apellido}`\n📧 **Correo:** `{usuario_correo}`@outlook.com\n🔑 **Pass:** `{password}`\n\n"
+            texto_perfiles += f"👤 **Nombre:** `{nombre} {apellido}`\n📧 **Correo:** `{correo_completo}`\n🔑 **Pass:** `{password}`\n\n"
 
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(telebot.types.InlineKeyboardButton("🔄 Generar 2 Nuevos", callback_data="generar_dos"))
@@ -126,7 +126,7 @@ def send_nuevo(message):
     )
 
 @bot.callback_query_handler(func=lambda call: True)
-def callback_inline(call):
+func def callback_inline(call):
     if call.data == "generar_dos":
         send_nuevo(call.message)
         
