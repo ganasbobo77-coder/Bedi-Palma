@@ -80,7 +80,7 @@ historial_chats = {}
 def send_welcome(message):
     bot.reply_to(
         message, 
-        "🤖 **Bot de Outlook**\n• Usa /nuevo -> Correos listos para copiar", 
+        "🤖 **Bot de Outlook**\n• Usa /nuevo -> 3 perfiles listos para copiar", 
         parse_mode="Markdown"
     )
 
@@ -91,13 +91,14 @@ def send_nuevo(message):
     if chat_id not in historial_chats:
         historial_chats[chat_id] = set()
         
-    texto_perfiles = "📋 **Tus perfiles únicos:**\n\n"
+    texto_perfiles = "📋 **Tus 3 perfiles únicos:**\n\n"
     passwords_usadas = set()
     
     perfiles_generados = 0
     intentos = 0
     
-    while perfiles_generados < 2 and intentos < 100:
+    # Genera 3 perfiles en lugar de 2
+    while perfiles_generados < 3 and intentos < 100:
         intentos += 1
         nombre = random.choice(NOMBRES)
         apellido = random.choice(APELLIDOS)
@@ -110,13 +111,12 @@ def send_nuevo(message):
             sufijo = random.randint(1000, 9999)
             password = generar_password(passwords_usadas)
             
-            # Correo sin puntos y con el dominio completo dentro del bloque para copiarlo fácilmente
             correo_completo = f"{nombre.lower()}{apellido.lower()}{sufijo}@outlook.com"
             
             texto_perfiles += f"👤 **Nombre:** `{nombre} {apellido}`\n📧 **Correo:** `{correo_completo}`\n🔑 **Pass:** `{password}`\n\n"
 
     markup = telebot.types.InlineKeyboardMarkup()
-    markup.add(telebot.types.InlineKeyboardButton("🔄 Generar 2 Nuevos", callback_data="generar_dos"))
+    markup.add(telebot.types.InlineKeyboardButton("🔄 Generar 3 Nuevos", callback_data="generar_tres"))
 
     bot.send_message(
         chat_id,
@@ -127,7 +127,7 @@ def send_nuevo(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
-    if call.data == "generar_dos":
+    if call.data == "generar_tres":
         send_nuevo(call.message)
         
     bot.answer_callback_query(call.id)
